@@ -540,37 +540,30 @@ body.dark .chain-resize-handle:hover,.dark .chain-resize-handle.dragging{backgro
   <div class="page-pad">
     <div class="eyebrow">mission select</div>
     <div class="page-title">Attack Scenarios</div>
-    <div class="page-sub">Five real 2025&ndash;2026 attacks. All output scripted. No live API calls.</div>
+    <div class="page-sub">Four real 2026 attacks. All output scripted. No live API calls.</div>
     <div class="cards">
       <div class="card" onclick="openStory(0)">
-        <div class="card-top"><div class="card-tags"><span class="badge badge-amber">OAuth Token Abuse</span><span class="card-date">&nbsp;Aug 2025</span></div><span class="card-steps">5 steps</span></div>
-        <div class="card-title">The Patient Attacker</div>
-        <div class="card-desc">Salesloft / Drift / Salesforce &mdash; GitHub dwell March&ndash;June 2025 &rarr; pivot to Drift&rsquo;s AWS &rarr; OAuth tokens weaponized against 700+ Salesforce orgs. Zero malware. UNC6395.</div>
-        <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;4</span><span class="pill pill-p">PWN &times;1</span></div><span class="card-cta">Run &rarr;</span></div>
-        <a class="scn-art" href="https://cloud.google.com/blog/topics/threat-intelligence/data-theft-salesforce-instances-via-salesloft-drift" target="_blank" onclick="event.stopPropagation()">&#x2197; Google GTIG Advisory &middot; Mandiant Investigation</a>
-      </div>
-      <div class="card" onclick="openStory(1)">
         <div class="card-top"><div class="card-tags"><span class="badge badge-red">Supply Chain</span><span class="card-date">&nbsp;Mar 2026</span></div><span class="card-steps">6 steps</span></div>
         <div class="card-title">The Poisoned Scanner</div>
         <div class="card-desc">Trivy / CanisterWorm &mdash; PAT stolen via pull_request_target by hackerbot-claw. Incomplete rotation exploited by TeamPCP. 47+ npm packages, first ICP blockchain C2.</div>
         <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;4</span><span class="pill pill-p">PWN &times;2</span></div><span class="card-cta">Run &rarr;</span></div>
         <a class="scn-art" href="https://www.blueflagsecurity.com/blog/when-your-scanner-becomes-the-weapon" target="_blank" onclick="event.stopPropagation()">&#x2197; BlueFlag Security Blog &middot; Wiz Research &middot; Palo Alto Unit 42</a>
       </div>
-      <div class="card" onclick="openStory(2)">
+      <div class="card" onclick="openStory(1)">
         <div class="card-top"><div class="card-tags"><span class="badge badge-blue">AI Agent Exploit</span><span class="card-date">&nbsp;Apr 2026</span></div><span class="card-steps">5 steps</span></div>
         <div class="card-title">Comment &amp; Control</div>
         <div class="card-desc">Claude Code / Gemini / Copilot &mdash; One PR title. Three AI agents compromised. ANTHROPIC_API_KEY posted publicly. CVSS 9.4. Aonan Guan (Wyze Labs) + Johns Hopkins.</div>
         <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;4</span><span class="pill pill-p">PWN &times;1</span></div><span class="card-cta">Run &rarr;</span></div>
         <a class="scn-art" href="https://oddguan.com/blog/comment-and-control-prompt-injection-credential-theft-claude-code-gemini-cli-github-copilot/" target="_blank" onclick="event.stopPropagation()">&#x2197; Researcher Blog &middot; SecurityWeek &middot; VentureBeat</a>
       </div>
-      <div class="card" onclick="openStory(3)">
+      <div class="card" onclick="openStory(2)">
         <div class="card-top"><div class="card-tags"><span class="badge badge-green">NHI Governance Gap</span><span class="card-date">&nbsp;Apr 2026</span></div><span class="card-steps">5 steps</span></div>
         <div class="card-title">The Invisible Agent</div>
         <div class="card-desc">Project Glasswing / Claude Mythos &mdash; AI deployment agent provisioned with production write access, no behavioral baseline, no IAM link. Attacker needed no zero-day. The access was already there.</div>
         <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;3</span><span class="pill pill-p">PWN &times;2</span></div><span class="card-cta">Run &rarr;</span></div>
         <a class="scn-art" href="https://www.blueflagsecurity.com/blog/when-the-sandbox-is-your-sdlc" target="_blank" onclick="event.stopPropagation()">&#x2197; BlueFlag Security Blog &middot; Chris Goodman &amp; Maya Neelakandhan</a>
       </div>
-      <div class="card" onclick="openStory(4)">
+      <div class="card" onclick="openStory(3)">
         <div class="card-top"><div class="card-tags"><span class="badge badge-dark">Dead-Man&#x27;s Switch</span><span class="card-date">&nbsp;May 2026</span></div><span class="card-steps">5 steps</span></div>
         <div class="card-title">The Shai-Hulud Worm</div>
         <div class="card-desc">TanStack / npm &mdash; 42 official packages poisoned, 84 malicious versions. Hidden commit tricked TanStack&rsquo;s own release system into signing malware. Dead-man&rsquo;s switch nukes home dir on token revocation. First npm worm with valid SLSA provenance.</div>
@@ -1301,84 +1294,6 @@ var ACTIONS={
 // ═══════════════════════════════════════════════════════
 
 var STORIES=[
-  {title:'The Patient Attacker',meta:'Salesloft \u00b7 Drift \u00b7 Salesforce \u00b7 UNC6395 \u00b7 Mandiant \u00b7 Aug 2025',badgeText:'OAUTH TOKEN ABUSE',badgeClass:'badge-amber',
-   steps:[
-    {phase:'RECON',op:'show-pat-info',label:'PAT Info',feedsInto:['scope-probe'],narrate:'<strong>Presenter note:</strong> 847 days. That\'s how long this token sat with admin:org + workflow scope and no rotation policy. UNC6395 found it — probably via a public log artifact or paste site. This is the skeleton key for everything that follows. BlueFlag\'s policy would have fired at day 31.',lines:[
-      ['cmd','$ phantomstrike show-pat-info --token $STOLEN_TOKEN'],['dim',''],
-      ['norm','  \u250c\u2500 Token Metadata \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510'],
-      ['norm','  \u2502  type       OAuth App Token (drift-integrations[bot])  \u2502'],
-      ['warn','  \u2502  age        847 days  \u2190 never rotated                 \u2502'],
-      ['crit','  \u2502  scopes     repo, workflow, write:org, admin:org        \u2502'],
-      ['norm','  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518'],['dim',''],
-      ['crit','  [CRITICAL]  workflow scope = full CI/CD control'],
-      ['crit','  [CRITICAL]  Accessible repos: 94   Private repos: 47'],
-      ['finding','crit','BLAST RADIUS','94 repos, 47 private, full workflow control. 847-day-old token.','No MFA. Token predates Salesloft\'s acquisition of Drift.']
-    ],bf:{alerts:[
-      {sev:'CRITICAL',pol:'Personal access tokens with write access and inactive for more than 30 days',id:'drift-integrations[bot]',det:'User personal access tokens which have write access but has not been used > 30 days.',ac:'runbook',acl:'Runbook: PAT-001 · Revoke & Rotate'},
-      {sev:'HIGH',pol:'Over-permissioned service accounts',id:'drift-integrations[bot]',det:'Service accounts with excessive permissions that allow actions beyond their intended functions, violating least privilege.',ac:'auto',acl:'Auto: Privilege Right-Sizing Triggered'}
-    ]}},
-    {phase:'RECON',op:'collaborator-audit',label:'Collaborators',feedsInto:['webhook-audit'],narrate:'<strong>Presenter note:</strong> The ghost account (shadow-user-43a) was added on day 1 — March 14, 2025. They sat quietly for 5 months without tripping a single alert. The bot impersonation is the subtle killer: commits appearing to come from a trusted Renovate identity wouldn\'t raise flags in most orgs — unless you\'re verifying commit signatures.',lines:[
-      ['cmd','$ phantomstrike collaborator-audit --org drift-hq'],['dim',''],
-      ['norm','  Scanning 94 repositories for external collaborators...'],['dim',''],
-      ['warn','  [RISK]  drift-hq/drift-sdk'],
-      ['norm','          collaborator: shadow-user-43a'],
-      ['crit','          permission:   write  \u2190 admin-equivalent on 3 repos'],
-      ['warn','          added:        2025-03-14  (day 1 of breach)'],
-      ['crit','  [RISK]  renovate-automation[bot]  \u2190 IMPERSONATED'],
-      ['crit','          commit signatures DO NOT MATCH verified bot'],
-      ['warn','  [RISK]  outsider@p-mail.xyz  pending invite  187 days stale'],
-      ['finding','crit','IDENTITY COMPROMISE','Ghost account + bot impersonation on day 1.','Standard monitoring flags new commits, not identity spoofing.']
-    ],bf:{alerts:[
-      {sev:'CRITICAL',pol:'Mismatched committer and author names',id:'renovate-automation[bot]',det:'Commits where the committer username differs from the author name.',ac:'block',acl:'Block: Commits Flagged'},
-      {sev:'HIGH',pol:'Inactive external SCM users',id:'outsider@p-mail.xyz',det:'External developers with access to SCM tools that have been inactive for 90 or more days.',ac:'auto',acl:'Auto: Revoke Stale Invite'}
-    ]}},
-    {phase:'RECON',op:'webhook-audit',label:'Webhooks',feedsInto:['actions-secrets-audit'],narrate:'<strong>Presenter note:</strong> drft-sync.workers.dev — one character off from drift. That webhook has been receiving every push, PR, and workflow event for months. No SSL. No HMAC signature validation. The attacker had complete, real-time visibility into the org\'s entire CI/CD activity stream the whole time.',lines:[
-      ['cmd','$ phantomstrike webhook-audit --org drift-hq --flag-insecure'],['dim',''],
-      ['crit','  [CRITICAL]  org-level webhook'],
-      ['norm','  url:     http://ingest.drft-sync.workers.dev/hook'],
-      ['crit','  note:    TYPOSQUATTED  (drft vs drift)   ssl: disabled'],
-      ['crit','  secret:  not set  \u2190 no HMAC validation'],
-      ['warn','  events:  push, pull_request, workflow_run, member'],['dim',''],
-      ['norm','  Clean: 12   Insecure: 2   Critical: 1'],
-      ['finding','crit','EXFILTRATION CHANNEL','Typosquatted webhook on all CI events. 4+ months of silent exfiltration.','No SSL. No HMAC. Completely open.']
-    ],bf:{alerts:[
-      {sev:'CRITICAL',pol:'Webhook URLs configured without HTTPS',id:'drift-hq · drft-sync.workers.dev',det:'Webhook URLs that are not configured with an HTTPS connection.',ac:'block',acl:'Block: Webhook Disabled'}
-    ]}},
-    {phase:'RECON',op:'secrets-audit',label:'Secrets',feedsInto:['inject-workflow'],narrate:'<strong>Presenter note:</strong> SALESFORCE_OAUTH_TOKEN has been in public workflow logs since March 21, 2025 — 150+ days. This isn\'t a Salesforce credential for one org. It\'s the OAuth integration token Drift uses to connect to 700+ customer Salesforce instances. One token, 700+ blast radius. That\'s the pivot.',lines:[
-      ['cmd','$ phantomstrike secrets-audit --org drift-hq --flag-stale'],['dim',''],
-      ['crit','  [CRITICAL]  SALESFORCE_OAUTH_TOKEN'],
-      ['crit','  last_rotated: never   exposed in public logs since 2025-03-21'],
-      ['warn','  [HIGH]  AWS_ACCESS_KEY_ID   age: 412 days'],
-      ['warn','  [HIGH]  NPM_PUBLISH_TOKEN   can publish to registry'],['dim',''],
-      ['norm','  Secrets audited: 41   Critical: 1   High: 2   No rotation: 38'],
-      ['finding','warn','CREDENTIAL EXPOSURE','SALESFORCE_OAUTH_TOKEN in public logs 150+ days. Supply chain risk via NPM.','Pivot into 700+ downstream Salesforce integrations.']
-    ],bf:{alerts:[
-      {sev:'CRITICAL',pol:'Personal access tokens with write access and inactive for more than 30 days',id:'SALESFORCE_OAUTH_TOKEN',det:'User personal access tokens which have write access but has not been used > 30 days.',ac:'runbook',acl:'Runbook: SEC-017 · Emergency Rotation'},
-      {sev:'HIGH',pol:'Build workflows with insecure environment inputs',id:'drift-hq/analytics-pipeline',det:'Build workflows where environment variables such as API keys and passwords are passed directly as inputs.',ac:'alert',acl:'Alert: Secrets Management Team'}
-    ]}},
-    {phase:'PWN',op:'oauth-pivot',label:'OAuth Pivot',feedsInto:[],narrate:'<strong>Presenter note:</strong> 5 months of patience, and this is the payoff. The attacker never touches a Salesforce exploit — they use the legitimate OAuth integration. To Salesforce\'s API, this is Drift requesting data on behalf of its customers. 700+ orgs. Zero indicators. UNC6395 deleted all SOQL query job records after exfil — standard APIs throughout.',lines:[
-      ['cmd','$ phantomstrike oauth-pivot --source drift-aws --target salesforce --harvest credentials'],
-      ['dim',''],      ['norm','  Phase 1: Pivot from GitHub access to Drift\'s AWS environment...'],
-      ['norm','  Leveraging: established workflows + guest user (March\u2013June dwell)'],['dim',''],
-      ['crit','  [PWN]  Located Drift OAuth token store in AWS S3'],
-      ['crit','  [PWN]  742 active integration tokens found (Salesforce, Google, Slack)'],
-      ['crit','  [PWN]  Downloading token manifest...'],['dim',''],
-      ['norm','  Phase 2: Weaponizing OAuth tokens against Salesforce orgs (700+)...'],
-      ['norm','  Method: trusted OAuth access \u2014 bypasses MFA, IP restrictions, SSO'],
-      ['crit','  SOQL: SELECT Id,Body FROM Attachment WHERE Name LIKE \'%key%\''],
-      ['crit','  SOQL: SELECT Id,TextBody FROM ContentNote WHERE Title LIKE \'%password%\''],['dim',''],
-      ['norm','  Phase 3: Harvesting credentials from Salesforce case records...'],
-      ['crit','  AWS_ACCESS_KEY_ID=AKIA...  x47 confirmed active (TruffleHog validation)'],
-      ['crit','  Snowflake tokens: 23   VPN credentials: 89   Passwords: 312+'],['dim',''],
-      ['norm','  Covering tracks: DELETE all SOQL query job records'],
-      ['crit','  Orgs compromised: 700+   Duration: 10 days   Malware used: NONE'],
-      ['finding','pwn','MISSION COMPLETE \u2014 ZERO MALWARE','700+ Salesforce orgs hit via trusted OAuth. 47 AWS keys validated active by TruffleHog. No exploits, no malware — just stolen trust at scale.','UNC6395 deleted all query job records after exfil. Standard APIs throughout. Zero indicators in most orgs.']
-    ],bf:{alerts:[
-      {sev:'CRITICAL',pol:'Over-permissive SCM applications',id:'Drift OAuth App (drift-hq)',det:'Applications with high-risk permissions on SCM tools that have never utilized these permissions or not done so within 90 days.',ac:'block',acl:'Block: OAuth App Revoked · Mandiant IR Engaged'},
-      {sev:'CRITICAL',pol:'Suspicious activity on repository after long period of inactivity',id:'drift-hq GitHub org',det:'An identity performing any activity on a repository that they previously had no activity on for 60 days.',ac:'runbook',acl:'Runbook: IR-CRIT · Full GitHub Audit + OAuth Token Rotation'}
-    ]}}
-  ]},
-
   {title:'The Poisoned Scanner',meta:'Aqua Security / Trivy \u00b7 TeamPCP \u00b7 Mar 19, 2026',badgeText:'SUPPLY CHAIN',badgeClass:'badge-red',
    steps:[
     {phase:'RECON',op:'prt-scan',label:'PRT Scan',feedsInto:['pin-audit'],narrate:'<strong>Presenter note:</strong> pull_request_target is the most dangerous Actions trigger when combined with attacker-controlled checkout. The workflow runs in the base repo\'s context — with your org\'s secrets — but the code that executes comes from the attacker\'s fork. hackerbot-claw exploited this to steal AQUA_BOT_PAT on Feb 26. This vulnerability class is still endemic across GitHub.',lines:[
