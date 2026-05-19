@@ -2325,9 +2325,7 @@ function renderSingleAlert(a,parent,ts){
     '<div class="bf-at"><span class="sev '+(sv[a.sev]||'sev-m')+'">'+a.sev+'</span>'+
     polHtml+
     '<span class="bf-ts">'+(ts||'')+'</span></div>'+
-    '<div><span class="id-chip">'+a.id+'</span></div>'+
-    '<div class="bf-det">'+a.det+'</div>'+
-    '<div><span class="ac-chip '+(ac[a.ac]||'ac-al')+'">'+a.acl+'</span></div>';
+    '<div class="bf-det">'+a.det+'</div>';
   parent.appendChild(div);
   // Wire click after element is in DOM
   setTimeout(function(){
