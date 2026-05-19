@@ -130,6 +130,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tf-val{color:#e2e5ea;}.tf-sub{color:#6b7280;font-size:11px;margin-top:3px;}
 .cursor-blink{display:inline-block;width:8px;height:15px;background:#5bc8f5;vertical-align:-3px;animation:blink 1s step-end infinite;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+@keyframes bfPulse{0%{box-shadow:0 0 0 0 rgba(30,64,175,.4);}70%{box-shadow:0 0 0 6px rgba(30,64,175,0);}100%{box-shadow:none;}}
+.bf-pulse{animation:bfPulse .8s ease-out;}
 .idle-msg{color:#4a5568;font-style:italic;}
 
 /* Feeds-into strip */
@@ -1885,7 +1887,10 @@ function openStory(idx){
     row.appendChild(btn);
   });
   document.getElementById('otab-atk').className='out-tab atk-active';
-  document.getElementById('otab-bf').className='out-tab';
+  var bfTab=document.getElementById('otab-bf');
+  bfTab.className='out-tab';
+  bfTab.style.background='';bfTab.style.color='';
+  bfTab.innerHTML='<svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><defs><linearGradient id="bfLgr" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a3fa0"/><stop offset="100%" stop-color="#0d6edb"/></linearGradient></defs><rect width="32" height="32" rx="7" fill="url(#bfLgr)"/><path d="M9 9h8c2.5 0 4.5 1.5 4.5 3.8 0 1.4-.7 2.5-1.9 3.1 1.5.5 2.4 1.8 2.4 3.3C22 22 19.8 23.5 17 23.5H9V9z" fill="white" opacity="0.92"/><rect x="11.5" y="11.5" width="5" height="3" rx="1.5" fill="url(#bfLgr)"/><rect x="11.5" y="16.5" width="5.5" height="3" rx="1.5" fill="url(#bfLgr)"/></svg> BlueFlag Console';
   document.getElementById('story-term-wrap').style.display='flex';
   document.getElementById('story-bf').style.display='none';
   document.getElementById('story-term-box').innerHTML='<span class="idle-msg">Select a step above to begin.</span><span class="cursor-blink"></span>';
@@ -1925,6 +1930,11 @@ function runStoryStep(idx){
   var ab=document.getElementById('sbtn-'+idx);if(ab)ab.classList.add('active');
   switchOut('atk');
   document.getElementById('story-term-ttl').textContent='phantomstrike \u2014 '+step.op;
+  // Reset BF tab to neutral state immediately
+  var bt=document.getElementById('otab-bf');
+  bt.innerHTML='<svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><defs><linearGradient id="bfLgs2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a3fa0"/><stop offset="100%" stop-color="#0d6edb"/></linearGradient></defs><rect width="32" height="32" rx="7" fill="url(#bfLgs2)"/><path d="M9 9h8c2.5 0 4.5 1.5 4.5 3.8 0 1.4-.7 2.5-1.9 3.1 1.5.5 2.4 1.8 2.4 3.3C22 22 19.8 23.5 17 23.5H9V9z" fill="white" opacity="0.92"/><rect x="11.5" y="11.5" width="5" height="3" rx="1.5" fill="url(#bfLgs2)"/><rect x="11.5" y="16.5" width="5.5" height="3" rx="1.5" fill="url(#bfLgs2)"/></svg> BlueFlag Console';
+  bt.style.background='';bt.style.color='';
+  // Render BF alerts immediately so clicking the tab works right away
   renderBF(step.bf,'story-bf-body',step.op);
   var box=document.getElementById('story-term-box');box.innerHTML='';
   // Update presenter notes bar — respect current toggle state
@@ -1948,10 +1958,12 @@ function runStoryStep(idx){
       });
       fs.className='feeds-strip show';
     } else { fs.className='feeds-strip'; }
-    // pulse BF tab
-    var bt=document.getElementById('otab-bf');
-    bt.textContent='\uD83D\uDEE1\uFE0F BlueFlag ('+step.bf.alerts.length+' findings)';
-    bt.style.background='#dbeafe';bt.style.color='#1e40af';
+    // Pulse BF tab badge — clear inline styles first so CSS classes take over
+    var bt2=document.getElementById('otab-bf');
+    bt2.style.background='';bt2.style.color='';
+    bt2.classList.add('bf-pulse');
+    bt2.innerHTML='\uD83D\uDEE1\uFE0F BlueFlag <span style="background:#1e40af;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;margin-left:4px;">'+step.bf.alerts.length+'</span>';
+    setTimeout(function(){if(bt2)bt2.classList.remove('bf-pulse');},1200);
   });
 }
 
