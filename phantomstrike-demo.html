@@ -1694,30 +1694,38 @@ var STORIES=[
         {sev:'HIGH',pol:'Suspicious activity on repository after long period of inactivity',id:'github-eng-1047 \xb7 session token',det:'An identity performing activity on repositories they previously had no activity on for 60 days — or from geolocation inconsistent with baseline.',ac:'alert',acl:'Alert: Identity Geo-Anomaly Detected \xb7 New Access Pattern'}
       ]}
     },
-    {phase:'PWN',op:'token-validate',label:'Token Validation',feedsInto:['mass-clone'],narrate:'<strong>Presenter note:</strong> Before bulk exfil, TeamPCP validates the token scope. This is the moment BlueFlag can fire before the damage is done. A GitHub token being used from an IP address in a completely different geography than the developer\'s established baseline — that\'s an anomaly. BlueFlag\'s behavioral ML is built to catch this exact pattern: same identity, different machine, different location, suddenly active across repos they\'ve never touched.',
+    {phase:'PWN',op:'initial-clone',label:'First Clone + Toxic Combo',feedsInto:['mass-clone'],narrate:'<strong>Presenter note:</strong> This is the step Maya and the BlueFlag engineering team flagged as the detection window — and why it matters operationally. Attackers always do a small validation clone first, before bulk exfil. They grab a handful of repos to confirm the token works. That first clone is the signal. Alone it\'s suspicious. But BlueFlag doesn\'t see signals alone — it correlates them. The same identity is doing three things at once that have never happened before: cloning repos they\'ve never touched (repo activation), from a geography that doesn\'t match their baseline (geolocation anomaly), with a volume spike against 90-day history (clone volume). Three independent risky behavior policies firing simultaneously. That\'s not noise — that\'s a toxic combination. This is Guru\'s toxic combo backend in action: BlueFlag surfaces the sequence of behaviors in combination, not as isolated alerts.',
       lines:[
-        ['cmd','$ phantomstrike token-validate --token [harvested] --enumerate-scope'],['dim',''],
-        ['norm','  Validating captured GitHub session token...'],['dim',''],
-        ['norm','  Token type: Personal Access Token (Classic)   \u2713 ACTIVE'],
-        ['crit','  Scopes: repo (all), workflow, write:org, delete_repo'],
-        ['norm','  Associated identity: [github-employee]   Org: github'],['dim',''],
-        ['norm','  Org membership: github   Role: member   Org repos accessible: 3,847'],
-        ['crit','  Private repos in scope: 3,847   \u2190 FULL ORG INTERNAL ACCESS'],['dim',''],
-        ['warn','  Token age: 847 days   Last rotation: never'],
-        ['warn','  Token last used (legit): from US/West Coast IP, business hours'],
-        ['crit','  Current use: from NL/Amsterdam IP, 02:14 UTC   \u2190 GEO ANOMALY'],['dim',''],
-        ['norm','  Scope confirmed. Proceeding to mass enumeration.'],
-        ['finding','crit','3,847 REPOS IN SCOPE','Overprivileged PAT, never rotated. Full org read access from a single developer\'s laptop credential.','847-day-old PAT with write:org. Classic 90:5 — employee needed maybe 5 repos.']
+        ['cmd','$ phantomstrike initial-clone --token [harvested] --probe --repos 5'],['dim',''],
+        ['norm','  Probe clone: sampling 5 repos to validate token scope...'],['dim',''],
+        ['norm','  Token type: PAT (Classic)   \u2713 ACTIVE   Scopes: repo, workflow, write:org'],
+        ['warn','  Token age: 847 days   Last rotation: NEVER   \u2190 overprivileged'],['dim',''],
+        ['norm','  [1/5] github/gh-internal-platform   \u2713 cloned   (first access ever)'],
+        ['crit','       \u2192 Repo activation: identity had ZERO prior activity on this repo'],
+        ['norm','  [2/5] github/copilot-internal       \u2713 cloned   (first access ever)'],
+        ['crit','       \u2192 Repo activation: dormant to this identity for 60+ days'],
+        ['norm','  [3/5] github/infra-secrets          \u2713 cloned   (first access ever)'],
+        ['norm','  [4/5] github/monolith-api            \u2713 cloned'],
+        ['norm','  [5/5] github/platform-core           \u2713 cloned'],['dim',''],
+        ['crit','  Source IP: 185.220.101.47 (NL/Amsterdam \u2014 Tor exit)'],
+        ['warn','  Identity baseline: US/West Coast, business hours, 9am\u20136pm PDT'],
+        ['crit','  Current session: 02:14 UTC, NL/Amsterdam   \u2190 GEO ANOMALY'],['dim',''],
+        ['crit','  \u26a0\ufe0f  TOXIC COMBINATION DETECTED:'],
+        ['crit','     1) Suspicious clone volume (probe = precursor spike vs 90d baseline)'],
+        ['crit','     2) New repo activation (5 repos, zero prior history on all 5)'],
+        ['crit','     3) Geolocation anomaly (NL vs US baseline, 02:14 UTC)'],['dim',''],
+        ['norm','  Probe confirmed. Token valid. Proceeding to full org clone.'],
+        ['finding','crit','TOXIC COMBO \u2014 THREE SIGNALS, ONE IDENTITY','Clone volume + repo activation + geo anomaly firing simultaneously on one identity. Each alone is suspicious. Together they are unambiguous.','This is the detection window. BlueFlag catches the combination before bulk exfil completes.']
       ],
       bf:{alerts:[
-        {sev:'CRITICAL',pol:'Personal access tokens with write access and inactive for more than 30 days',id:'[github-employee] \xb7 PAT-classic-847d',det:'User personal access tokens which have write access but has not been used in over 30 days. 847-day-old token with write:org scope used from anomalous geolocation.',ac:'block',acl:'Block: Token Suspended \xb7 Identity Review Triggered'},
-        {sev:'CRITICAL',pol:'Identities with multiple risky policy violations',id:'[github-employee]',det:'Identities found with multiple risky detections: overprivileged PAT, geo-anomaly, repo access spike.',ac:'runbook',acl:'Runbook: IR-001 \xb7 Identity Containment \xb7 SOC + CISO Notified'}
+        {sev:'CRITICAL',pol:'Suspicious activity on repository after long period of inactivity',id:'[github-employee] \xb7 gh-internal-platform, copilot-internal (+3)',det:'An identity performing activity on repositories they previously had no activity on for 60 days. 5 simultaneous first-access repo activations from a single identity.',ac:'block',acl:'Block: Identity Suspended \xb7 Token Revoked \xb7 SOC Notified'},
+        {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'[github-employee] \xb7 probe clone \xb7 NL/02:14 UTC',det:'Anomalous clone activity: geo mismatch (US baseline vs NL), off-hours, 5 repos never accessed before. Precursor pattern to bulk exfil. Toxic combination: clone volume + repo activation + geolocation.',ac:'block',acl:'Block: Session Terminated \xb7 Toxic Combo \xb7 IR Initiated'}
       ]}
     },
-    {phase:'PWN',op:'mass-clone',label:'Mass Exfil',feedsInto:[],narrate:'<strong>Presenter note:</strong> 3,800 repos in under 4 hours. GitHub\'s own internal source code — platform tooling, infrastructure, internal APIs. TeamPCP posted the repo list to a dark marketplace 45 minutes after exfil completed. Asking price: $50,000, one buyer, then shred. If no buyer: free release. GitHub confirmed the scope matches their investigation. ESIX severity: 7.96. BlueFlag\'s "GitHub applications cloning or downloading repositories" policy fires here — and the clone volume anomaly against the developer identity\'s 90-day baseline would be a five-alarm fire. This step is where the CircleCI comparison lands in prospect conversations: same vector, same outcome, much larger blast radius.',
+    {phase:'PWN',op:'mass-clone',label:'Mass Exfil',feedsInto:[],narrate:'<strong>Presenter note:</strong> The toxic combo should have stopped this. If BlueFlag fires at step 4 and the token is suspended, this step never happens. But in the GitHub incident, there was no identity-level behavioral monitoring — no clone volume baseline, no repo activation alerting, no geo correlation. So the attacker ran for 3h 47m undetected. 3,800 repos. GitHub\'s own source code. Platform internals, Copilot logic, CI/CD infrastructure. Listed for $50K on a dark marketplace 45 minutes after exfil completed. One buyer, then shred. If no buyer: free release. This is the answer to the prospect question: "What does it cost us not to have this?" ESIX 7.96. May 19, 2026.',
       lines:[
         ['cmd','$ phantomstrike mass-clone --token [harvested] --org github --all-private'],['dim',''],
-        ['norm','  Initiating bulk repository clone via compromised identity...'],['dim',''],
+        ['norm','  Probe validated. Initiating full org clone...'],['dim',''],
         ['norm','  [0001/3847] github/gh-internal-platform       2.1 GB  \u2713  1.8s'],
         ['norm','  [0002/3847] github/monolith-api               4.7 GB  \u2713  3.4s'],
         ['norm','  [0003/3847] github/infra-core                 1.3 GB  \u2713  1.2s'],
@@ -1729,11 +1737,11 @@ var STORIES=[
         ['pwn','  [PWN]  Listing: ~3,800 private GitHub repos \u2022 asking $50,000 \u2022 1 buyer'],
         ['pwn','  [PWN]  Threat: if no buyer in 72h \u2014 public free release'],['dim',''],
         ['norm','  ESIX\u00a9: 7.96   Observed: May 19, 2026   Status: Pending verification'],
-        ['finding','pwn','MISSION COMPLETE \u2014 GITHUB INTERNAL','3,847 repos. GitHub\'s own source. Platform internals, Copilot logic, infrastructure code. Listed for $50K.','One developer. One extension. One never-rotated PAT. Full internal org exfiltrated.']
+        ['finding','pwn','MISSION COMPLETE \u2014 GITHUB INTERNAL','3,847 repos. GitHub\u2019s own source. Platform internals, Copilot logic, infrastructure code. Listed for $50K.','The toxic combo in step 4 was the catch window. No identity monitoring = 3h 47m undetected.']
       ],
       bf:{alerts:[
-        {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'[github-employee] \xb7 3,847 repos',det:'GitHub Apps or identities that have cloned or downloaded code repositories. Identity cloned entire org in a single session \u2014 extreme spike vs 90-day baseline.',ac:'block',acl:'Block: Identity Suspended \xb7 Legal + IR Notified \xb7 Token Class Rotation Initiated'},
-        {sev:'CRITICAL',pol:'Identities with multiple risky policy violations',id:'github (org-wide)',det:'Org-wide: overprivileged PAT, geo-anomaly, clone-volume spike, 847-day unrotated token. Toxic combination across identity, toolchain, and access posture.',ac:'runbook',acl:'Runbook: EXFIL-CRIT \xb7 Data Breach Protocol \xb7 GitHub IR Statement Prepared'}
+        {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'[github-employee] \xb7 3,847 repos',det:'Full org clone: 3,847 repos in a single session. Extreme spike vs 90-day baseline. Toxic combination escalated to maximum severity: clone volume + repo activation + geolocation all confirmed active.',ac:'block',acl:'Block: Identity Suspended \xb7 Legal + IR Notified \xb7 Token Class Emergency Rotation'},
+        {sev:'CRITICAL',pol:'Identities with multiple risky policy violations',id:'github (org-wide)',det:'Org-wide toxic combination confirmed: overprivileged 847-day PAT + geo-anomaly + clone-volume spike + new repo activation across 3,847 repos. All four risky behavior policies active simultaneously.',ac:'runbook',acl:'Runbook: EXFIL-CRIT \xb7 Data Breach Protocol \xb7 GitHub IR Statement Prepared'}
       ]}
     }
   ]}
