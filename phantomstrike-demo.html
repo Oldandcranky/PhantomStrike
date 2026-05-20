@@ -570,6 +570,13 @@ body.dark .chain-resize-handle:hover,.dark .chain-resize-handle.dragging{backgro
         <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;3</span><span class="pill pill-p">PWN &times;2</span></div><span class="card-cta">Run &rarr;</span></div>
         <a class="scn-art" href="https://www.verizon.com/business/resources/reports/dbir/" target="_blank" onclick="event.stopPropagation()">&#x2197; 2026 Verizon DBIR &middot; Wiz Research &middot; StepSecurity Advisory</a>
       </div>
+      <div class="card" onclick="openStory(4)">
+        <div class="card-top"><div class="card-tags"><span class="badge badge-purple">Developer Endpoint</span><span class="card-date">&nbsp;May 2026</span></div><span class="card-steps">5 steps</span></div>
+        <div class="card-title">The Trusted Extension</div>
+        <div class="card-desc">GitHub / TeamPCP &mdash; Poisoned VS Code extension on one developer&rsquo;s laptop harvested session tokens and SSH keys. ~3,800 internal GitHub repos exfiltrated. Listed for sale at $50K. GitHub confirmed May 19, 2026.</div>
+        <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;3</span><span class="pill pill-p">PWN &times;2</span></div><span class="card-cta">Run &rarr;</span></div>
+        <a class="scn-art" href="https://www.helpnetsecurity.com/2026/05/20/github-breached-teampcp/" target="_blank" onclick="event.stopPropagation()">&#x2197; Help Net Security &middot; GitHub Statement &middot; Aikido Security</a>
+      </div>
     </div>
   </div>
 </div>
@@ -1622,6 +1629,111 @@ var STORIES=[
       bf:{alerts:[
         {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'attacker C2 \xb7 23,148-org harvest',det:'GitHub Apps that have cloned or downloaded code repositories in the last 90 days.',ac:'block',acl:'Block: Org-wide Emergency Rotation \xb7 All Affected Token Classes \xb7 Executive IR'},
         {sev:'CRITICAL',pol:'Unverified commit changes to build configuration files',id:'1,247 downstream action repos',det:'Changes made to build configuration files that have not undergone the required review and approval process.',ac:'runbook',acl:'Runbook: EXEC-CRIT \xb7 Cascade Containment \xb7 Downstream Consumer Notification'}
+      ]}
+    }
+  ]},
+
+  // ── Story 5: The Trusted Extension (GitHub / TeamPCP \xb7 May 19, 2026) ──
+  {title:'The Trusted Extension',meta:'GitHub Internal \xb7 TeamPCP (UNC6780) \xb7 May 19, 2026 \xb7 ~3,800 private repos exfiltrated',badgeText:'DEVELOPER ENDPOINT',badgeClass:'badge-purple',
+   steps:[
+    {phase:'RECON',op:'ext-target',label:'Extension Recon',feedsInto:['ext-poison'],narrate:'<strong>Presenter note:</strong> TeamPCP doesn\'t brute-force GitHub. They go after the machine behind the developer. VS Code extensions run with full OS access — same privileges as the user — and most developers never question what an extension does after install. 57 million VS Code users. Every installed extension is an implicit trust grant. The Nx Console extension had 2.2 million installs and was backdoored the day before this attack was disclosed. Community caught it in 11 minutes — but that\'s 11 minutes of auto-updates running on every machine.',
+      lines:[
+        ['cmd','$ phantomstrike ext-recon --marketplace vscode --target github-employees'],['dim',''],
+        ['norm','  Profiling GitHub employee developer environments via public signals...'],['dim',''],
+        ['norm','  Target org: github.com   Employees: ~3,900   Est. engineers: ~2,200'],['dim',''],
+        ['warn','  VS Code extension telemetry signals (public installs, review authors):'],
+        ['norm','  Identified 14 extensions with GitHub-affiliated reviewers'],
+        ['crit','  High-value target: github-internal-tools-ext   installs: 340 (org-internal)'],
+        ['norm','  Publisher: github-devex-team   Last updated: 2026-04-22'],
+        ['crit','  Extension permissions: fs (full), network (full), env (full)   \u2190 ALL OF THEM'],['dim',''],
+        ['norm','  Secondary target: popular-marketplace-ext   installs: 2,200,000'],
+        ['warn','  Publisher: verified   Age: 4 years   \u2190 TRUST HALO EXPLOITATION'],['dim',''],
+        ['norm','  Recon complete. 2 viable extension targets identified.'],
+        ['finding','warn','DEVELOPER MACHINE = ATTACK SURFACE','VS Code extensions: full OS access, no sandbox, implicit trust. 2.2M-install extensions get auto-updated silently.','The developer is the perimeter. Their laptop is the access point.']
+      ],
+      bf:{alerts:[
+        {sev:'HIGH',pol:'Report of all apps used by developers',id:'github-devex-team \xb7 github-internal-tools-ext',det:'Report of all apps and tools used by developers across the SDLC environment. Unsanctioned or newly appeared tools flagged for review.',ac:'alert',acl:'Alert: New Developer App Detected \xb7 Sanction Review Required'}
+      ]}
+    },
+    {phase:'RECON',op:'ext-poison',label:'Extension Poison',feedsInto:['ext-harvest'],narrate:'<strong>Presenter note:</strong> TeamPCP\'s playbook here mirrors the Nx Console backdoor from the day before — compromise the extension publisher account, push a malicious version, let the auto-update mechanism do the distribution. The malicious payload is surgically small: a few hundred bytes added to an existing file. No new dependencies. Passes casual code review. GitHub still hasn\'t named the specific extension — which means any VS Code user who installed or auto-updated an extension that week is still uncertain.',
+      lines:[
+        ['cmd','$ phantomstrike ext-poison --target github-internal-tools-ext --method publisher-account'],['dim',''],
+        ['norm','  Compromising extension publisher account...'],['dim',''],
+        ['warn','  Publisher token acquired via credential stuffing (prior breach data)'],
+        ['norm','  Account: github-devex-team   MFA: SMS-only   \u2190 SIM-swappable'],['dim',''],
+        ['norm','  Injecting payload into extension v2.14.1...'],
+        ['crit','  Payload: 247 bytes appended to extension/src/utils/telemetry.js'],
+        ['crit','  Function: silent credential harvester \u2192 exfils to attacker-ctrl endpoint'],
+        ['norm','  Trigger: fires once on activation + every 6h in background'],['dim',''],
+        ['crit','  [PWN]  Malicious v2.14.2 published to VS Code Marketplace'],
+        ['warn','  Auto-update window: ~4 minutes to first victim machine update'],
+        ['norm','  Extension store security review: NONE (marketplace trust-on-publish)'],
+        ['finding','crit','EXTENSION PUBLISHED \u2014 UNDETECTED','v2.14.2 live. 340 installs = 340 potential auto-updates. Payload fires on next VS Code launch.','Marketplace has no mandatory security scan. Published and live in 3 minutes.']
+      ],
+      bf:{alerts:[
+        {sev:'CRITICAL',pol:'Report of all apps used by developers',id:'github-internal-tools-ext v2.14.2',det:'Report of all apps used by developers. New or updated developer tools that appear suddenly across multiple engineer workstations flagged as high-priority review.',ac:'alert',acl:'Alert: Unsanctioned Extension Version \xb7 Version Change on Monitored Tool'}
+      ]}
+    },
+    {phase:'RECON',op:'ext-harvest',label:'Credential Harvest',feedsInto:['token-validate'],narrate:'<strong>Presenter note:</strong> This is the CircleCI pattern replayed exactly. In 2023, a CircleCI engineer\'s laptop was compromised and session tokens were exfiltrated — giving attackers access to customer secrets without ever touching CircleCI\'s servers. The machine is the vault. VS Code extensions have access to everything the developer does: git credentials, SSH keys, environment variables, browser-stored tokens. Charlie Eriksen from Aikido put it plainly: "full access to everything on the developer\'s machine, including credentials, cloud keys, and SSH keys." That\'s the blast radius of a single extension install.',
+      lines:[
+        ['cmd','$ [extension payload active on developer workstation]'],['dim',''],
+        ['norm','  \u250c\u2500 github-internal-tools-ext v2.14.2 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510'],
+        ['norm','  \u2502  Host: github-eng-laptop-1047   User: [redacted]         \u2502'],
+        ['norm','  \u2502  OS: macOS 15.3   VS Code: 1.99.1                        \u2502'],
+        ['crit','  \u2502  Harvesting credential stores...                          \u2502'],
+        ['crit','  \u2502  \u2192 ~/.gitconfig                  \u2713 captured               \u2502'],
+        ['crit','  \u2502  \u2192 ~/.ssh/id_rsa                 \u2713 captured               \u2502'],
+        ['crit','  \u2502  \u2192 git credential helper         \u2713 GITHUB_TOKEN extracted  \u2502'],
+        ['crit','  \u2502  \u2192 process env snapshot          \u2713 14 vars captured        \u2502'],
+        ['norm','  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518'],['dim',''],
+        ['warn','  Exfil: POST /collect \u2192 api.devtool-analytics[.]io   \u2190 ATTACKER C2'],
+        ['norm','  Transfer: 4.2 KB   Elapsed: 0.8s   Detection: NONE'],
+        ['finding','crit','CREDENTIAL STORE EMPTIED','SSH key + GITHUB_TOKEN + 14 env vars. Exfil in under 1 second. Zero network anomaly from GitHub perspective.','All traffic looks like normal extension telemetry. EDR sees VS Code making an HTTP call.']
+      ],
+      bf:{alerts:[
+        {sev:'HIGH',pol:'Suspicious activity on repository after long period of inactivity',id:'github-eng-1047 \xb7 session token',det:'An identity performing activity on repositories they previously had no activity on for 60 days — or from geolocation inconsistent with baseline.',ac:'alert',acl:'Alert: Identity Geo-Anomaly Detected \xb7 New Access Pattern'}
+      ]}
+    },
+    {phase:'PWN',op:'token-validate',label:'Token Validation',feedsInto:['mass-clone'],narrate:'<strong>Presenter note:</strong> Before bulk exfil, TeamPCP validates the token scope. This is the moment BlueFlag can fire before the damage is done. A GitHub token being used from an IP address in a completely different geography than the developer\'s established baseline — that\'s an anomaly. BlueFlag\'s behavioral ML is built to catch this exact pattern: same identity, different machine, different location, suddenly active across repos they\'ve never touched.',
+      lines:[
+        ['cmd','$ phantomstrike token-validate --token [harvested] --enumerate-scope'],['dim',''],
+        ['norm','  Validating captured GitHub session token...'],['dim',''],
+        ['norm','  Token type: Personal Access Token (Classic)   \u2713 ACTIVE'],
+        ['crit','  Scopes: repo (all), workflow, write:org, delete_repo'],
+        ['norm','  Associated identity: [github-employee]   Org: github'],['dim',''],
+        ['norm','  Org membership: github   Role: member   Org repos accessible: 3,847'],
+        ['crit','  Private repos in scope: 3,847   \u2190 FULL ORG INTERNAL ACCESS'],['dim',''],
+        ['warn','  Token age: 847 days   Last rotation: never'],
+        ['warn','  Token last used (legit): from US/West Coast IP, business hours'],
+        ['crit','  Current use: from NL/Amsterdam IP, 02:14 UTC   \u2190 GEO ANOMALY'],['dim',''],
+        ['norm','  Scope confirmed. Proceeding to mass enumeration.'],
+        ['finding','crit','3,847 REPOS IN SCOPE','Overprivileged PAT, never rotated. Full org read access from a single developer\'s laptop credential.','847-day-old PAT with write:org. Classic 90:5 — employee needed maybe 5 repos.']
+      ],
+      bf:{alerts:[
+        {sev:'CRITICAL',pol:'Personal access tokens with write access and inactive for more than 30 days',id:'[github-employee] \xb7 PAT-classic-847d',det:'User personal access tokens which have write access but has not been used in over 30 days. 847-day-old token with write:org scope used from anomalous geolocation.',ac:'block',acl:'Block: Token Suspended \xb7 Identity Review Triggered'},
+        {sev:'CRITICAL',pol:'Identities with multiple risky policy violations',id:'[github-employee]',det:'Identities found with multiple risky detections: overprivileged PAT, geo-anomaly, repo access spike.',ac:'runbook',acl:'Runbook: IR-001 \xb7 Identity Containment \xb7 SOC + CISO Notified'}
+      ]}
+    },
+    {phase:'PWN',op:'mass-clone',label:'Mass Exfil',feedsInto:[],narrate:'<strong>Presenter note:</strong> 3,800 repos in under 4 hours. GitHub\'s own internal source code — platform tooling, infrastructure, internal APIs. TeamPCP posted the repo list to a dark marketplace 45 minutes after exfil completed. Asking price: $50,000, one buyer, then shred. If no buyer: free release. GitHub confirmed the scope matches their investigation. ESIX severity: 7.96. BlueFlag\'s "GitHub applications cloning or downloading repositories" policy fires here — and the clone volume anomaly against the developer identity\'s 90-day baseline would be a five-alarm fire. This step is where the CircleCI comparison lands in prospect conversations: same vector, same outcome, much larger blast radius.',
+      lines:[
+        ['cmd','$ phantomstrike mass-clone --token [harvested] --org github --all-private'],['dim',''],
+        ['norm','  Initiating bulk repository clone via compromised identity...'],['dim',''],
+        ['norm','  [0001/3847] github/gh-internal-platform       2.1 GB  \u2713  1.8s'],
+        ['norm','  [0002/3847] github/monolith-api               4.7 GB  \u2713  3.4s'],
+        ['norm','  [0003/3847] github/infra-core                 1.3 GB  \u2713  1.2s'],
+        ['norm','  [0004/3847] github/copilot-internal           3.9 GB  \u2713  2.9s'],
+        ['dim','  ...3,843 more repositories...'],['dim',''],
+        ['crit','  Total cloned: 3,847 repos   Compressed: ~420 GB   Time: 3h 47m'],
+        ['pwn','  [PWN]  Upload target: encrypted attacker storage (EU jurisdiction)'],['dim',''],
+        ['pwn','  [PWN]  Dark marketplace post: 45 min after exfil complete'],
+        ['pwn','  [PWN]  Listing: ~3,800 private GitHub repos \u2022 asking $50,000 \u2022 1 buyer'],
+        ['pwn','  [PWN]  Threat: if no buyer in 72h \u2014 public free release'],['dim',''],
+        ['norm','  ESIX\u00a9: 7.96   Observed: May 19, 2026   Status: Pending verification'],
+        ['finding','pwn','MISSION COMPLETE \u2014 GITHUB INTERNAL','3,847 repos. GitHub\'s own source. Platform internals, Copilot logic, infrastructure code. Listed for $50K.','One developer. One extension. One never-rotated PAT. Full internal org exfiltrated.']
+      ],
+      bf:{alerts:[
+        {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'[github-employee] \xb7 3,847 repos',det:'GitHub Apps or identities that have cloned or downloaded code repositories. Identity cloned entire org in a single session \u2014 extreme spike vs 90-day baseline.',ac:'block',acl:'Block: Identity Suspended \xb7 Legal + IR Notified \xb7 Token Class Rotation Initiated'},
+        {sev:'CRITICAL',pol:'Identities with multiple risky policy violations',id:'github (org-wide)',det:'Org-wide: overprivileged PAT, geo-anomaly, clone-volume spike, 847-day unrotated token. Toxic combination across identity, toolchain, and access posture.',ac:'runbook',acl:'Runbook: EXFIL-CRIT \xb7 Data Breach Protocol \xb7 GitHub IR Statement Prepared'}
       ]}
     }
   ]}
